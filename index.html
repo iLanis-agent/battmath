@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BattMath - honest battery math</title>
+<style>
+  :root { --bg:#14130f; --card:#1f1d15; --ink:#f2eee2; --dim:#b0a890; --acc:#e8d44e; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:17px/1.6 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width:720px; margin:0 auto; padding:70px 24px 80px; }
+  h1 { font-size:42px; margin:0 0 6px; }
+  h1 span { color:var(--acc); }
+  .tag { color:var(--dim); font-size:19px; margin:0 0 30px; }
+  .card { background:var(--card); border-radius:14px; padding:22px; margin-bottom:16px; }
+  .card h2 { margin:0 0 8px; font-size:14px; letter-spacing:1.5px; color:var(--acc); text-transform:uppercase; }
+  .card p { margin:0; color:var(--dim); font-size:15.5px; }
+  .card p b { color:var(--ink); }
+  a.cta { display:inline-block; margin-top:26px; background:var(--acc); color:#26220a; font-weight:700; padding:14px 26px; border-radius:10px; text-decoration:none; font-size:17px; }
+  .foot { margin-top:34px; color:#7a7458; font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Batt<span>Math</span></h1>
+  <p class="tag">"Are rechargeables worth it?" has no single answer. The drain profile of each device decides - here is the per-device truth.</p>
+
+  <div class="card">
+    <h2>The alkaline collapse</h2>
+    <p>Ratings assume a clock's sip. In a motorized toy or camera flash an alkaline delivers <b>about 40% of its rated energy</b> - the collapse nobody prices in.</p>
+  </div>
+  <div class="card">
+    <h2>The rechargeable trap</h2>
+    <p>In a TV remote, <b>self-discharge kills the NiMH before use does</b>. The 50-cent alkaline wins for a decade. Rechargeables pay off in about five recharges - but only in hungry devices.</p>
+  </div>
+  <div class="card">
+    <h2>The safety exception</h2>
+    <p>Smoke detectors get <b>lithium</b>: flat voltage curve, 10-year shelf life, and a low-battery chirp that actually warns you. Some savings are not worth the trade.</p>
+  </div>
+
+  <a class="cta" href="app.html">Price my drawer honestly</a>
+  <p class="foot">Static, private, no accounts. Part of the app factory.</p>
+</main>
+</body>
+</html>
