@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BattMath - honest battery math</title>
+<style>
+  :root { --bg:#14130f; --card:#1f1d15; --ink:#f2eee2; --dim:#b0a890; --acc:#e8d44e; --hot:#8fd98a; --cold:#d98a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding:28px 24px 8px; max-width:980px; margin:0 auto; display:flex; justify-content:space-between; align-items:baseline; }
+  h1 { margin:0; font-size:28px; }
+  h1 span { color:var(--acc); }
+  nav a { color:var(--dim); text-decoration:none; font-size:14px; }
+  main { max-width:980px; margin:0 auto; padding:16px 24px 60px; display:grid; gap:18px; }
+  .card { background:var(--card); border-radius:14px; padding:20px; }
+  .card h2 { margin:0 0 12px; font-size:13px; letter-spacing:1.5px; color:var(--dim); text-transform:uppercase; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px; }
+  label { display:block; font-size:13px; color:var(--dim); margin-bottom:4px; }
+  input, select { width:100%; background:#171510; border:1px solid #453f28; color:var(--ink); border-radius:8px; padding:9px 10px; font-size:15px; }
+  .hint { font-size:12.5px; color:var(--dim); margin-top:10px; }
+  button { cursor:pointer; border:0; border-radius:9px; padding:11px 16px; font-size:15px; background:var(--acc); color:#26220a; font-weight:600; }
+  button.ghost { background:#37331f; color:var(--ink); font-weight:500; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .devices { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:8px; margin-top:4px; }
+  .dev { display:flex; align-items:center; gap:9px; background:#171510; border:1px solid #35311e; border-radius:9px; padding:9px 11px; font-size:13.5px; cursor:pointer; }
+  .dev.on { border-color:var(--acc); background:#262310; }
+  .dev input { width:auto; accent-color:var(--acc); }
+  .dev .w { margin-left:auto; color:var(--dim); font-size:12px; white-space:nowrap; }
+  .verdict { font-size:17px; line-height:1.65; }
+  .verdict b { color:var(--acc); }
+  table { width:100%; border-collapse:collapse; margin-top:14px; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid #35311e; }
+  th { color:var(--dim); font-weight:600; font-size:12px; letter-spacing:1px; text-transform:uppercase; }
+  td.num { color:var(--acc); font-weight:600; }
+  tr.best td { background:#262310; }
+  .pill { display:inline-block; padding:2px 8px; border-radius:12px; font-size:11.5px; font-weight:700; background:var(--hot); color:#14300f; margin-left:6px; }
+  .note { margin-top:14px; font-size:13.5px; color:var(--dim); }
+  .note b { color:var(--acc); font-weight:600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Batt<span>Math</span></h1>
+  <nav><a href="index.html">home</a></nav>
+</header>
+<main>
+  <section class="card">
+    <h2>Your battery drawer</h2>
+    <div class="devices" id="devices"></div>
+    <div class="grid" style="margin-top:14px">
+      <div><label>Charger cost to amortize ($/yr)</label><input id="charger" type="number" step="1" value="4"></div>
+    </div>
+    <p class="hint">$4/yr is a $20 charger over 5 years. The honest question is not "are rechargeables worth it" - it is per device, because drain profile decides everything.</p>
+    <div class="row">
+      <button id="run">Price my drawer honestly</button>
+      <button class="ghost" data-preset="family">family drawer</button>
+      <button class="ghost" data-preset="photog">the camera parent</button>
+      <button class="ghost" data-preset="minimal">minimalist</button>
+    </div>
+  </section>
+
+  <section class="card" id="result" hidden>
+    <h2>The verdict</h2>
+    <p class="verdict" id="verdictText"></p>
+    <div id="tableWrap"></div>
+    <p class="note" id="advice"></p>
+  </section>
+
+  <section class="card">
+    <h2>Why the honest answer is different per device</h2>
+    <p class="note">Alkaline ratings assume a clock's gentle sip. Put one in a motorized toy or camera flash and it delivers <b>about 40% of its rated energy</b> - that is the collapse nobody prices in. Rechargeables flip the math the other way in low-drain devices: a remote sips so slowly that <b>self-discharge, not use, kills the NiMH</b>, so the 50-cent alkaline wins for a decade. NiMH pays for itself in <b>about five recharges</b> in anything hungry. And safety devices are their own category: smoke detectors get <b>lithium</b>, because the flat voltage curve means the chirp warning actually works.</p>
+  </section>
+</main>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var selected = {};
+
+  function renderDevices() {
+    var wrap = $('devices');
+    wrap.innerHTML = '';
+    Object.keys(BattMath.DEVICES).forEach(function (id) {
+      var d = BattMath.DEVICES[id];
+      var div = document.createElement('div');
+      div.className = 'dev' + (selected[id] ? ' on' : '');
+      div.innerHTML = '<input type="checkbox" ' + (selected[id] ? 'checked' : '') + '>' +
+        '<span>' + d.name + '</span><span class="w">' + d.cells + ' cell' + (d.cells > 1 ? 's' : '') + ' / ' + d.daysPerSet + 'd</span>';
+      div.onclick = function () { selected[id] = !selected[id]; renderDevices(); };
+      wrap.appendChild(div);
+    });
+  }
+
+  var PRESETS = {
+    family: ['remote', 'clock', 'toy', 'xbox', 'smoke'],
+    photog: ['camera', 'mouse', 'smoke'],
+    minimal: ['remote', 'clock']
+  };
+  document.querySelectorAll('[data-preset]').forEach(function (b) {
+    b.onclick = function () {
+      selected = {};
+      PRESETS[b.dataset.preset].forEach(function (id) { selected[id] = true; });
+      renderDevices();
+      run();
+    };
+  });
+
+  function run() {
+    var ids = Object.keys(selected).filter(function (k) { return selected[k]; });
+    if (!ids.length) { alert('Pick at least one device.'); return; }
+    var charger = +$('charger').value || 0;
+
+    var rows = [];
+    var totals = { alkaline: 0, nimh: 0, lithium: 0 };
+    ids.forEach(function (id) {
+      var d = BattMath.DEVICES[id];
+      var rec = BattMath.recommendation(d);
+      var ca = BattMath.annualCost('alkaline', d, 0);
+      var cn = BattMath.annualCost('nimh', d, charger);
+      var cl = BattMath.annualCost('lithium', d, 0);
+      totals.alkaline += ca; totals.nimh += cn; totals.lithium += cl;
+      rows.push({ name: d.name, ca: ca, cn: cn, cl: cl, pick: rec.pick, why: rec.why });
+    });
+
+    var best = totals.alkaline <= totals.nimh && totals.alkaline <= totals.lithium ? 'alkaline'
+      : totals.nimh <= totals.lithium ? 'nimh' : 'lithium';
+    var names = { alkaline: 'all-alkaline', nimh: 'NiMH where it wins', lithium: 'all-lithium' };
+
+    $('verdictText').innerHTML = 'A year of your drawer costs <b>$' + Math.round(totals.alkaline * 100) / 100 +
+      ' on alkaline</b>, <b>$' + Math.round(totals.nimh * 100) / 100 + ' on NiMH</b> (charger included), and <b>$' +
+      Math.round(totals.lithium * 100) / 100 + ' on lithium</b>. But the honest answer is per device - the mixed drawer below beats any single chemistry.';
+
+    var html = '<table><tr><th>Device</th><th>Alkaline</th><th>NiMH</th><th>Lithium</th><th>Put in it</th></tr>';
+    rows.forEach(function (r) {
+      html += '<tr class="' + 'x' + '"><td>' + r.name + '</td><td class="num">$' + r.ca + '</td><td class="num">$' + r.cn +
+        '</td><td class="num">$' + r.cl + '</td><td>' + BattMath.CELLS[r.pick].name + ' <span class="pill">best</span></td></tr>';
+    });
+    html += '<tr><td><b>Whole drawer</b></td><td class="num">$' + Math.round(totals.alkaline * 100) / 100 +
+      '</td><td class="num">$' + Math.round(totals.nimh * 100) / 100 + '</td><td class="num">$' +
+      Math.round(totals.lithium * 100) / 100 + '</td><td></td></tr></table>';
+    $('tableWrap').innerHTML = html;
+
+    var worst = rows.slice().sort(function (a, b) { return (b.ca - Math.min(b.cn, b.cl)) - (a.ca - Math.min(a.cn, a.cl)); })[0];
+    var saving = Math.round((worst.ca - Math.min(worst.cn, worst.cl)) * 100) / 100;
+    var advice = 'Biggest lever: the <b>' + worst.name + '</b> - ' + worst.why +
+      (saving > 0 ? ' That one swap saves about <b>$' + saving + ' a year</b>.' : '');
+    $('advice').innerHTML = advice;
+
+    $('result').hidden = false;
+    $('result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  $('run').onclick = run;
+  renderDevices();
+})();
+</script>
+</body>
+</html>
